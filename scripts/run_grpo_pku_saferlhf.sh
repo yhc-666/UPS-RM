@@ -10,8 +10,8 @@
 set -x
 
 # ========== 路径配置 (请根据实际环境修改) ==========
-PROJECT_ROOT=/path/to/UPS-RM
-POLICY_MODEL_PATH=/path/to/Qwen2-7B-Instruct
+PROJECT_ROOT=/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/yanghaocheng04/UPS-RM
+POLICY_MODEL_PATH=/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/deepsearch_files/LLMbasemodels/huggingface.co/Qwen/Qwen2.5-7B-Instruct
 REWARD_MODEL_PATH=${PROJECT_ROOT}/merge/merged_model/Naive-RM-saferlhf
 
 # 数据路径
@@ -26,7 +26,7 @@ GROUP_LOG_DIR=${PROJECT_ROOT}/logging
 
 # ========== Wandb配置 ==========
 export WANDB_PROJECT="verl_grpo_pku_saferlhf"
-export WANDB_RUN_NAME="qwen2_7b_myrm_grpo"
+export WANDB_RUN_NAME="qwen2_7b_instructmyrm_grpo"
 
 # ========== 训练配置 ==========
 python3 -m verl.trainer.main_ppo \
