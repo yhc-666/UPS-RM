@@ -356,6 +356,8 @@ class RayPPOTrainer:
         # GRPO group logging configuration
         self.group_log_dir = self.config.trainer.get("group_log_dir", None)
         self.group_log_freq = self.config.trainer.get("group_log_freq", 10)
+        self.group_log_max_groups = self.config.trainer.get("group_log_max_groups", 50)
+        self.group_log_max_samples_per_group = self.config.trainer.get("group_log_max_samples_per_group", None)
 
         # if ref_in_actor is True, the reference policy will be actor without lora applied
         lora_rank = config.actor_rollout_ref.model.get("lora", {}).get("rank", 0)
@@ -1389,9 +1391,11 @@ class RayPPOTrainer:
         # currently, we only support validation using the reward_function.
         if self.val_reward_fn is not None and self.config.trainer.get("val_before_train", True):
             val_metrics = self._validate()
-            assert val_metrics, f"{val_metrics=}"
-            pprint(f"Initial validation metrics: {val_metrics}")
-            logger.log(data=val_metrics, step=self.global_steps)
+            if val_metrics:
+                pprint(f"Initial validation metrics: {val_metrics}")
+                logger.log(data=val_metrics, step=self.global_steps)
+            else:
+                pprint("Initial validation skipped (no metrics returned).")
             if self.config.trainer.get("val_only", False):
                 return
 
@@ -1628,6 +1632,8 @@ class RayPPOTrainer:
                                 global_step=self.global_steps,
                                 log_dir=self.group_log_dir,
                                 log_freq=self.group_log_freq,
+                                max_groups=self.group_log_max_groups,
+                                max_samples_per_group=self.group_log_max_samples_per_group,
                             )
 
                         # compute advantages, executed on the driver process

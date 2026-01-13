@@ -149,6 +149,18 @@ trainer:
   # Directory for logging validation data; no dump if null
   validation_data_dir: null
 
+  # Directory for logging GRPO group data; no dump if null
+  group_log_dir: null
+
+  # Group logging frequency (in training iterations)
+  group_log_freq: 10
+
+  # Maximum number of groups to log per step
+  group_log_max_groups: 50
+
+  # Maximum number of samples per group to log; null means all
+  group_log_max_samples_per_group: null
+
   # Number of nodes used in the training
   nnodes: 1
 

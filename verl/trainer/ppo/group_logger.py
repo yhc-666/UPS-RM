@@ -41,6 +41,7 @@ class GRPOGroupLogger:
         uids: np.ndarray,
         tokenizer,
         max_groups: Optional[int] = None,
+        max_samples_per_group: Optional[int] = None,
     ):
         """
         记录group数据到JSON文件
@@ -53,43 +54,68 @@ class GRPOGroupLogger:
             uids: uid数组 [bs*n]，用于分组
             tokenizer: 用于解码的tokenizer
             max_groups: 最大记录的group数量（None表示全部记录）
+            max_samples_per_group: 每个group最大记录的样本数（None表示全部记录）
         """
-        # 解码prompts和responses
-        prompt_texts = tokenizer.batch_decode(prompts, skip_special_tokens=True)
-        response_texts = tokenizer.batch_decode(responses, skip_special_tokens=True)
-
         # 处理rewards - 如果是2D则sum到1D
         if rewards.dim() > 1:
-            reward_scores = rewards.sum(dim=-1).cpu().tolist()
+            reward_scores = rewards.sum(dim=-1)
         else:
-            reward_scores = rewards.cpu().tolist()
+            reward_scores = rewards
 
-        # 按uid分组
-        uid_to_data = defaultdict(list)
+        reward_scores = reward_scores.detach().cpu().tolist()
+
+        # 选择要记录的groups与indices（单次遍历，保持uids顺序）
+        selected_uids = []
+        selected_uid_set = set()
+        uid_to_indices: dict[object, list[int]] = defaultdict(list)
+
         for i, uid in enumerate(uids):
-            uid_to_data[uid].append({
-                "response": response_texts[i],
-                "reward": reward_scores[i],
-            })
+            if uid not in selected_uid_set:
+                if max_groups is not None and len(selected_uids) >= max_groups:
+                    continue
+                selected_uids.append(uid)
+                selected_uid_set.add(uid)
+
+            if uid in selected_uid_set:
+                if max_samples_per_group is None or len(uid_to_indices[uid]) < max_samples_per_group:
+                    uid_to_indices[uid].append(i)
+
+        # 过滤掉没有任何样本被选中的group（例如 max_samples_per_group=0）
+        selected_uids = [uid for uid in selected_uids if uid_to_indices[uid]]
+
+        if not selected_uids:
+            return None
+
+        # 解码所需的prompts/responses（只对采样到的indices解码，避免全batch decode）
+        prompt_indices = [uid_to_indices[uid][0] for uid in selected_uids if uid_to_indices[uid]]
+        response_indices = [idx for uid in selected_uids for idx in uid_to_indices[uid]]
+
+        prompt_texts = tokenizer.batch_decode(prompts[prompt_indices].cpu(), skip_special_tokens=True)
+        response_texts = tokenizer.batch_decode(responses[response_indices].cpu(), skip_special_tokens=True)
+
+        uid_to_prompt_text = {uid: prompt_texts[i] for i, uid in enumerate(selected_uids)}
+        idx_to_response_text = {idx: response_texts[i] for i, idx in enumerate(response_indices)}
 
         # 构建输出数据
         groups = []
-        unique_uids = list(dict.fromkeys(uids))  # 保持顺序的去重
-
-        if max_groups is not None:
-            unique_uids = unique_uids[:max_groups]
-
-        for uid in unique_uids:
-            # 找到该uid对应的第一个prompt（所有同uid的prompt应该相同）
-            first_idx = np.where(uids == uid)[0][0]
-            prompt_text = prompt_texts[first_idx]
-
-            groups.append({
-                "step": global_step,
-                "group_id": str(uid),
-                "prompt": prompt_text,
-                "responses": uid_to_data[uid],
-            })
+        for uid in selected_uids:
+            indices = uid_to_indices[uid]
+            if not indices:
+                continue
+            groups.append(
+                {
+                    "step": global_step,
+                    "group_id": str(uid),
+                    "prompt": uid_to_prompt_text[uid],
+                    "responses": [
+                        {
+                            "response": idx_to_response_text[idx],
+                            "reward": float(reward_scores[idx]),
+                        }
+                        for idx in indices
+                    ],
+                }
+            )
 
         # 保存到文件
         output_path = os.path.join(self.log_dir, f"step_{global_step}.json")
@@ -106,6 +132,7 @@ def log_grpo_groups(
     log_dir: str,
     log_freq: int = 10,
     max_groups: Optional[int] = 50,
+    max_samples_per_group: Optional[int] = None,
 ):
     """
     便捷函数：从batch中提取数据并记录groups
@@ -117,6 +144,7 @@ def log_grpo_groups(
         log_dir: 日志保存目录
         log_freq: 记录频率
         max_groups: 最大记录的group数量
+        max_samples_per_group: 每个group最大记录的样本数
     """
     if global_step % log_freq != 0:
         return None
@@ -136,4 +164,5 @@ def log_grpo_groups(
         uids=uids,
         tokenizer=tokenizer,
         max_groups=max_groups,
+        max_samples_per_group=max_samples_per_group,
     )

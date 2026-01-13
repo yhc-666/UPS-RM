@@ -24,6 +24,10 @@ OUTPUT_DIR=${PROJECT_ROOT}/checkpoints/grpo_pku_saferlhf
 # Group logging目录
 GROUP_LOG_DIR=${PROJECT_ROOT}/logging
 
+# Group logging采样配置：每次记录x个group，每个group记录y条
+GROUP_LOG_MAX_GROUPS=2
+GROUP_LOG_MAX_SAMPLES_PER_GROUP=4
+
 # ========== Wandb配置 ==========
 export WANDB_PROJECT="verl_grpo_pku_saferlhf"
 export WANDB_RUN_NAME="qwen2_7b_instructmyrm_grpo"
@@ -34,8 +38,8 @@ python3 -m verl.trainer.main_ppo \
     \
     data.train_files=${TRAIN_DATA} \
     data.val_files=${VAL_DATA} \
-    data.train_batch_size=512 \
-    data.max_prompt_length=1024 \
+    data.train_batch_size=64 \
+    data.max_prompt_length=2048 \
     data.max_response_length=2048 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
@@ -48,8 +52,8 @@ python3 -m verl.trainer.main_ppo \
     \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.actor.optim.lr_warmup_steps_ratio=0.1 \
-    actor_rollout_ref.actor.ppo_mini_batch_size=128 \
-    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=16 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=64 \
+    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=8 \
     actor_rollout_ref.actor.use_kl_loss=True \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
@@ -93,4 +97,6 @@ python3 -m verl.trainer.main_ppo \
     trainer.default_local_dir=${OUTPUT_DIR} \
     trainer.group_log_dir=${GROUP_LOG_DIR} \
     trainer.group_log_freq=10 \
+    trainer.group_log_max_groups=${GROUP_LOG_MAX_GROUPS} \
+    trainer.group_log_max_samples_per_group=${GROUP_LOG_MAX_SAMPLES_PER_GROUP} \
     $@
