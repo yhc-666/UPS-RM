@@ -1,6 +1,6 @@
 - 任务：使用PKU-Alignment/PKU-SafeRLHF数据集+一个自定义的奖励模型（llm+MLPhead）做单轮 QA + 判别式 RM。我当前正在本地进行verl框架的开发，具体运行会在remote server上。请协助我进行本地开发。
 
-- 环境 8*A100 96G GPU
+- 环境 8*H120 140G GPU
 
 - Reward model
     - backbone：sfairXC/FsfairX-LLaMA3-RM-v0.1 (8B)
@@ -29,3 +29,5 @@
 - 我想要使用VERL的
     - Legacy FSDP RM
     - AgentLoop
+
+- 训练脚本与数据预处理脚本全放在@scripts。重要配置都放在python3 -m verl.trainer.main_ppo \下面
