@@ -61,7 +61,7 @@ export WANDB_MODE=offline
 
 ### 1. 数据预处理
 ```bash
-python scripts/preprocess_pku_saferlhf.py \
+python3 scripts/preprocess_pku_saferlhf.py \
     --local_dataset_path Data/PKU-SafeRLHF \
     --local_save_dir Data/pku_saferlhf_verl
 ```
@@ -69,10 +69,10 @@ python scripts/preprocess_pku_saferlhf.py \
 ### 2. 验证（可选）
 ```bash
 # 测试RM加载
-python scripts/test_rm_loading.py
+python3 scripts/test_rm_loading.py
 
 # 测试数据加载
-python scripts/test_data_loading.py
+python3 scripts/test_data_loading.py
 ```
 
 ### 3. 启动训练

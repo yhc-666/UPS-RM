@@ -31,3 +31,5 @@
     - AgentLoop
 
 - 训练脚本与数据预处理脚本全放在@scripts。重要配置都放在python3 -m verl.trainer.main_ppo \下面
+
+- 训练时保存每一个group内n条Json message list至@logging，并在开头加上我们的RM给出的reward数值。n可在

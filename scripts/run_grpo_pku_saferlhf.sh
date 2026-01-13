@@ -21,6 +21,9 @@ VAL_DATA=${PROJECT_ROOT}/Data/pku_saferlhf_verl/val.parquet
 # 输出目录
 OUTPUT_DIR=${PROJECT_ROOT}/checkpoints/grpo_pku_saferlhf
 
+# Group logging目录
+GROUP_LOG_DIR=${PROJECT_ROOT}/logging
+
 # ========== Wandb配置 ==========
 export WANDB_PROJECT="verl_grpo_pku_saferlhf"
 export WANDB_RUN_NAME="qwen2_7b_myrm_grpo"
@@ -63,7 +66,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=16 \
     \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=16 \
-    actor_rollout_ref.ref.fsdp_config.param_offload=True \
+    actor_rollout_ref.ref.fsdp_config.param_offload=False \
     \
     reward_model.enable=True \
     reward_model.strategy=fsdp \
@@ -71,7 +74,7 @@ python3 -m verl.trainer.main_ppo \
     reward_model.model.trust_remote_code=True \
     reward_model.model.input_tokenizer=${POLICY_MODEL_PATH} \
     reward_model.model.use_remove_padding=True \
-    reward_model.model.fsdp_config.param_offload=True \
+    reward_model.model.fsdp_config.param_offload=False \
     reward_model.micro_batch_size_per_gpu=16 \
     \
     algorithm.use_kl_in_reward=False \
@@ -88,4 +91,6 @@ python3 -m verl.trainer.main_ppo \
     trainer.test_freq=10 \
     trainer.total_epochs=5 \
     trainer.default_local_dir=${OUTPUT_DIR} \
+    trainer.group_log_dir=${GROUP_LOG_DIR} \
+    trainer.group_log_freq=10 \
     $@

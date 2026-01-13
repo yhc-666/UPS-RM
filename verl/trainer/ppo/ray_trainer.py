@@ -43,6 +43,7 @@ from verl.single_controller.ray.base import create_colocated_worker_cls
 from verl.trainer.config import AlgoConfig
 from verl.trainer.ppo import core_algos
 from verl.trainer.ppo.core_algos import AdvantageEstimator, agg_loss
+from verl.trainer.ppo.group_logger import log_grpo_groups
 from verl.trainer.ppo.metric_utils import (
     compute_data_metrics,
     compute_throughout_metrics,
@@ -351,6 +352,10 @@ class RayPPOTrainer:
             project_name=self.config.trainer.project_name,
             experiment_name=self.config.trainer.experiment_name,
         )
+
+        # GRPO group logging configuration
+        self.group_log_dir = self.config.trainer.get("group_log_dir", None)
+        self.group_log_freq = self.config.trainer.get("group_log_freq", 10)
 
         # if ref_in_actor is True, the reference policy will be actor without lora applied
         lora_rank = config.actor_rollout_ref.model.get("lora", {}).get("rank", 0)
@@ -1614,6 +1619,16 @@ class RayPPOTrainer:
                             batch, is_metrics = compute_rollout_correction_and_add_to_batch(batch, rollout_corr_config)
                             # IS and off-policy metrics already have rollout_corr/ prefix
                             metrics.update(is_metrics)
+
+                        # GRPO group logging: save prompts, responses and rewards
+                        if self.group_log_dir is not None:
+                            log_grpo_groups(
+                                batch=batch,
+                                tokenizer=self.tokenizer,
+                                global_step=self.global_steps,
+                                log_dir=self.group_log_dir,
+                                log_freq=self.group_log_freq,
+                            )
 
                         # compute advantages, executed on the driver process
                         norm_adv_by_std_in_grpo = self.config.algorithm.get(
