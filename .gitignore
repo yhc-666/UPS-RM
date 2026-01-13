@@ -128,3 +128,8 @@ logs
 log
 outputs
 .history
+# Data directory
+Data/
+
+# Merge directory
+merge/
