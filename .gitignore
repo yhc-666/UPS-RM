@@ -128,3 +128,5 @@ logs
 log
 outputs
 .history
+# Data directory
+Data/
