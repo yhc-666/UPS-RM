@@ -73,6 +73,7 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.ref.fsdp_config.param_offload=False \
     \
     reward_model.enable=True \
+    reward_model.use_reward_loop=False \
     reward_model.strategy=fsdp \
     reward_model.model.path=${REWARD_MODEL_PATH} \
     reward_model.model.trust_remote_code=True \
