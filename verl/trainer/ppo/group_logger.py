@@ -153,7 +153,15 @@ def log_grpo_groups(
 
     prompts = batch.batch["prompts"]
     responses = batch.batch["responses"]
-    rewards = batch.batch.get("token_level_scores", batch.batch.get("rewards"))
+    # TensorDict.get() 需要显式 default 参数，否则会抛出 KeyError
+    if "token_level_scores" in batch.batch.keys():
+        rewards = batch.batch["token_level_scores"]
+    elif "rewards" in batch.batch.keys():
+        rewards = batch.batch["rewards"]
+    elif "token_level_rewards" in batch.batch.keys():
+        rewards = batch.batch["token_level_rewards"]
+    else:
+        rewards = None
     uids = batch.non_tensor_batch["uid"]
 
     return logger.log_groups(
