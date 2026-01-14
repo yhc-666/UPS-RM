@@ -153,7 +153,7 @@ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, 
     kld = kld * response_mask
     beta = kl_ctrl.value
 
-    token_level_rewards = token_level_scores - beta * kld
+    token_level_rewards = -token_level_scores - beta * kld
 
     current_kl = masked_mean(kld, mask=response_mask, axis=-1)  # average over sequence
     current_kl = torch.mean(current_kl, dim=0).item()
@@ -1607,7 +1607,7 @@ class RayPPOTrainer:
                             )
                             metrics.update(kl_metrics)
                         else:
-                            batch.batch["token_level_rewards"] = batch.batch["token_level_scores"]
+                            batch.batch["token_level_rewards"] = -batch.batch["token_level_scores"]
 
                         # Compute rollout correction: IS weights, rejection sampling, and metrics
                         # Only runs in decoupled mode (computes once per batch using stable π_old)

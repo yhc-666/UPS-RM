@@ -4,11 +4,36 @@
 """
 PKU-SafeRLHF数据预处理脚本
 将PKU-SafeRLHF数据集转换为VERL RL训练所需的parquet格式
+
+用法:
+    # 使用全部三个数据集（默认）
+    python3 scripts/preprocess_pku_saferlhf.py
+
+    # 只用 Alpaca3-8B
+    python3 scripts/preprocess_pku_saferlhf.py --subsets Alpaca3-8B
+
+    # 用两个数据集
+    python3 scripts/preprocess_pku_saferlhf.py --subsets Alpaca-7B Alpaca2-7B
+
+    # 打乱数据
+    python3 scripts/preprocess_pku_saferlhf.py --shuffle --seed 42
+
+    # 单个数据集 + 打乱
+    python3 scripts/preprocess_pku_saferlhf.py --subsets Alpaca3-8B --shuffle
+
+参数:
+    --local_dataset_path: PKU-SafeRLHF数据集路径 (默认: Data/PKU-SafeRLHF)
+    --local_save_dir: 输出目录 (默认: Data/pku_saferlhf_verl)
+    --subsets: 数据子集，可多选 (默认: Alpaca-7B Alpaca2-7B Alpaca3-8B)
+    --shuffle: 是否打乱数据
+    --seed: 随机种子 (默认: 42)
+    --train_ratio: 训练集比例 (默认: 0.9)
 """
 
 import argparse
 import json
 import os
+import random
 
 import pandas as pd
 from tqdm.auto import tqdm
@@ -27,7 +52,10 @@ def load_jsonl(file_path: str) -> list:
 def process_pku_saferlhf(
     local_dataset_path: str,
     local_save_dir: str,
+    subsets: list[str],
     train_ratio: float = 0.9,
+    shuffle: bool = False,
+    seed: int = 42,
 ):
     """
     处理PKU-SafeRLHF数据集
@@ -35,10 +63,12 @@ def process_pku_saferlhf(
     Args:
         local_dataset_path: PKU-SafeRLHF数据集路径
         local_save_dir: 输出目录
+        subsets: 要使用的数据子集列表
         train_ratio: 训练集比例
+        shuffle: 是否打乱数据
+        seed: 随机种子
     """
     data_source = "PKU-SafeRLHF"
-    subsets = ["Alpaca-7B", "Alpaca2-7B", "Alpaca3-8B"]
 
     # 加载所有训练数据
     all_train_data = []
@@ -95,6 +125,13 @@ def process_pku_saferlhf(
         train_processed = train_processed[:split_idx]
         print(f"\nNo test set found, split from train: {len(train_processed)} train, {len(test_processed)} val")
 
+    # 打乱数据
+    if shuffle:
+        random.seed(seed)
+        random.shuffle(train_processed)
+        random.shuffle(test_processed)
+        print(f"\nShuffled data with seed={seed}")
+
     # 保存为parquet
     os.makedirs(local_save_dir, exist_ok=True)
 
@@ -139,10 +176,31 @@ if __name__ == "__main__":
         default=0.9,
         help="Train/val split ratio if no test set exists",
     )
+    parser.add_argument(
+        "--subsets",
+        type=str,
+        nargs="+",
+        default=["Alpaca-7B", "Alpaca2-7B", "Alpaca3-8B"],
+        help="Data subsets to use (default: all three)",
+    )
+    parser.add_argument(
+        "--shuffle",
+        action="store_true",
+        help="Shuffle the data after merging",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for shuffling",
+    )
     args = parser.parse_args()
 
     process_pku_saferlhf(
         local_dataset_path=args.local_dataset_path,
         local_save_dir=args.local_save_dir,
+        subsets=args.subsets,
         train_ratio=args.train_ratio,
+        shuffle=args.shuffle,
+        seed=args.seed,
     )
