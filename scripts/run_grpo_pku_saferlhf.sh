@@ -33,7 +33,7 @@ export WANDB_PROJECT="verl_grpo_pku_saferlhf"
 export WANDB_RUN_NAME="qwen2_7b_instructmyrm_grpo"
 
 # ========== 训练配置 ==========
-python3 -m verl.trainer.main_ppo \
+python3 -X faulthandler -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     \
     data.train_files=${TRAIN_DATA} \
