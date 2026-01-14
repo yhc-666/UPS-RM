@@ -1854,13 +1854,23 @@ class RewardModelWorker(Worker, DistProfilerExtension):
                 output = self.reward_module(
                     input_ids=input_ids, attention_mask=attention_mask, position_ids=position_ids, use_cache=False
                 )
-                rm_score = output.logits  # (batch_size, seq_len, 1)
+                rm_score = output.logits
                 rm_score = rm_score.squeeze(-1)
 
-            # extract the result of the last valid token
-            eos_mask_idx = torch.argmax(position_ids * attention_mask, dim=-1)  # (bsz,)
-            rm_score = rm_score[torch.arange(batch_size), eos_mask_idx]
-            return rm_score
+            # 支持两种输出格式:
+            # 1. 标准格式: (batch_size, seq_len) - 需要提取 last token
+            # 2. 自定义格式: (batch_size,) 或 (batch_size, 1) - 模型已经输出 last token score
+            if rm_score.dim() == 1:
+                # 模型已经输出 (batch_size,) 的 last token score
+                return rm_score
+            elif rm_score.dim() == 2 and rm_score.shape[1] == 1:
+                # 模型输出 (batch_size, 1)
+                return rm_score.squeeze(-1)
+            else:
+                # 标准格式 (batch_size, seq_len)，需要提取 last valid token
+                eos_mask_idx = torch.argmax(position_ids * attention_mask, dim=-1)  # (bsz,)
+                rm_score = rm_score[torch.arange(batch_size), eos_mask_idx]
+                return rm_score
 
     def _expand_to_token_level(self, data: DataProto, scores: torch.Tensor):
         batch_size = data.batch.batch_size[0]

@@ -78,7 +78,7 @@ python3 -X faulthandler -m verl.trainer.main_ppo \
     reward_model.model.path=${REWARD_MODEL_PATH} \
     reward_model.model.trust_remote_code=True \
     reward_model.model.input_tokenizer=${POLICY_MODEL_PATH} \
-    reward_model.model.use_remove_padding=True \
+    reward_model.model.use_remove_padding=False \
     reward_model.model.fsdp_config.param_offload=False \
     reward_model.micro_batch_size_per_gpu=16 \
     \
