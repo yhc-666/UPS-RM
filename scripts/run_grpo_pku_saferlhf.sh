@@ -11,7 +11,7 @@ set -x
 
 # ========== 路径配置 (请根据实际环境修改) ==========
 PROJECT_ROOT=/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/yanghaocheng04/UPS-RM
-POLICY_MODEL_PATH=/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/deepsearch_files/LLMbasemodels/huggingface.co/Qwen/Qwen2.5-7B-Instruct
+POLICY_MODEL_PATH=/tmp/models/Qwen2.5-7B-Instruct
 REWARD_MODEL_PATH=${PROJECT_ROOT}/merge/merged_model/Naive-RM-saferlhf
 
 # 数据路径
