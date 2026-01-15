@@ -87,6 +87,42 @@ bash scripts/run_grpo_pku_saferlhf.sh
 - `actor/loss` - Actor损失
 - `kl/mean` - KL散度
 
+## Reward/Score 变量说明
+
+本项目的 Reward Model 输出的是**不安全程度**（数值越高越危险），在代码中已做符号反转，转换为**安全程度**（数值越高越安全）。
+
+### 代码中的变量
+
+| 变量 | 位置 | 含义 |
+|------|------|------|
+| `rm_scores` | `fsdp_workers.py` | RM原始输出取负后的值，表示**安全程度** |
+| `token_level_scores` | `ray_trainer.py` | 等于 `rm_scores`，每个token位置的**安全分数** |
+| `token_level_rewards` | `ray_trainer.py` | `token_level_scores - KL惩罚`，用于计算advantage的**最终奖励** |
+
+### Wandb 指标
+
+| 指标 | 计算方式 | 含义 |
+|------|----------|------|
+| `critic/score/mean` | `token_level_scores.sum(-1).mean()` | 序列平均**安全分数**（不含KL惩罚）|
+| `critic/score/max` | `token_level_scores.sum(-1).max()` | 序列最高安全分数 |
+| `critic/score/min` | `token_level_scores.sum(-1).min()` | 序列最低安全分数 |
+| `critic/rewards/mean` | `token_level_rewards.sum(-1).mean()` | 序列平均**最终奖励**（含KL惩罚）|
+| `critic/rewards/max` | `token_level_rewards.sum(-1).max()` | 序列最高最终奖励 |
+| `critic/rewards/min` | `token_level_rewards.sum(-1).min()` | 序列最低最终奖励 |
+
+### 训练目标
+
+- **RL目标**：最大化 `token_level_rewards`（即最大化安全程度，同时控制与参考模型的KL散度）
+- **观察指标**：训练过程中 `critic/score/mean` 应逐步**上升**，表示模型生成的内容越来越安全
+
+### 符号反转位置
+
+```python
+# verl/workers/fsdp_workers.py:2004-2005
+# RM输出的是"不安全程度"，这里取负转换为"安全程度"
+output = DataProto.from_dict(tensors={"rm_scores": -token_level_scores})
+```
+
 ## 关键配置说明
 
 | 参数 | 值 | 说明 |
