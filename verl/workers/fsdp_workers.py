@@ -2001,8 +2001,8 @@ class RewardModelWorker(Worker, DistProfilerExtension):
 
             token_level_scores = self._expand_to_token_level(data, scores)
             # Note that this is only the scores, may not be the final rewards used to train RL
-            # 取负：RM输出的是"不安全程度"，转换为"安全程度"
-            output = DataProto.from_dict(tensors={"rm_scores": -token_level_scores})
+            # sigmoid(-logits): 不安全(logits高) → 接近0, 安全(logits低) → 接近1
+            output = DataProto.from_dict(tensors={"rm_scores": torch.sigmoid(-token_level_scores)})
 
         # https://pytorch.org/docs/stable/notes/fsdp.html#fsdp-notes
         # unshard the root FSDP module
