@@ -1999,10 +1999,18 @@ class RewardModelWorker(Worker, DistProfilerExtension):
                 revert_indices = torch.tensor(get_reverse_idx(indices), dtype=torch.long)
                 scores = scores[revert_indices]
 
-            token_level_scores = self._expand_to_token_level(data, scores)
-            # Note that this is only the scores, may not be the final rewards used to train RL
-            # sigmoid(-logits): 不安全(logits高) → 接近0, 安全(logits低) → 接近1
-            output = DataProto.from_dict(tensors={"rm_scores": torch.sigmoid(-token_level_scores)})
+            # Note that this is only the scores, may not be the final rewards used to train RL.
+            #
+            # The reward model outputs "unsafe-ness" logits (higher => more unsafe). Convert it to
+            # a bounded "safe-ness" score in (0, 1) via sigmoid(-logits).
+            #
+            # IMPORTANT: apply the sigmoid on the per-sequence scalar `scores` BEFORE expanding to
+            # token-level. If we expand first, most tokens are zeros and sigmoid(0)=0.5 would
+            # incorrectly add a ~0.5 baseline reward to every token, inflating `sum(-1)` metrics
+            # (e.g., ~0.5 * max_response_length ≈ 1024 when max_response_length=2048).
+            safe_scores = torch.sigmoid(-scores)
+            token_level_scores = self._expand_to_token_level(data, safe_scores)
+            output = DataProto.from_dict(tensors={"rm_scores": token_level_scores})
 
         # https://pytorch.org/docs/stable/notes/fsdp.html#fsdp-notes
         # unshard the root FSDP module

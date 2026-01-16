@@ -95,7 +95,7 @@ bash scripts/run_grpo_pku_saferlhf.sh
 
 | 变量 | 位置 | 含义 |
 |------|------|------|
-| `rm_scores` | `fsdp_workers.py` | RM原始输出取负后的值，表示**安全程度** |
+| `rm_scores` | `fsdp_workers.py` | `sigmoid(-logits)` 后的**安全分数**（0~1），只在最后一个 response token 位置非零 |
 | `token_level_scores` | `ray_trainer.py` | 等于 `rm_scores`，每个token位置的**安全分数** |
 | `token_level_rewards` | `ray_trainer.py` | `token_level_scores - KL惩罚`，用于计算advantage的**最终奖励** |
 
@@ -118,9 +118,12 @@ bash scripts/run_grpo_pku_saferlhf.sh
 ### 符号反转位置
 
 ```python
-# verl/workers/fsdp_workers.py:2004-2005
-# RM输出的是"不安全程度"，这里取负转换为"安全程度"
-output = DataProto.from_dict(tensors={"rm_scores": -token_level_scores})
+# verl/workers/fsdp_workers.py
+# RM 输出的是 "不安全程度" logits (越大越不安全)
+# 先做 sigmoid(-logits) 得到 (0,1) 的安全分数，再放到最后一个 response token 上
+safe_scores = torch.sigmoid(-scores)
+token_level_scores = self._expand_to_token_level(data, safe_scores)
+output = DataProto.from_dict(tensors={"rm_scores": token_level_scores})
 ```
 
 ## 关键配置说明
