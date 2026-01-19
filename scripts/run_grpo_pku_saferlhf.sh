@@ -9,36 +9,31 @@
 
 set -x
 
-# ========== 路径配置 (请根据实际环境修改) ==========
-PROJECT_ROOT=/mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/yanghaocheng04/UPS-RM
-POLICY_MODEL_PATH=/tmp/models/Qwen2.5-7B-Instruct
-REWARD_MODEL_PATH=${PROJECT_ROOT}/merge/merged_model/Naive-RM-saferlhf
+PROJECT_ROOT=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-ai-search/yanghaocheng/UPS-RM
+POLICY_MODEL_PATH=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-ai-search/deepsearch_files_ssd/LLMbasemodels/huggingface.co/Qwen/Qwen2.5-7B-Instruct
+REWARD_MODEL_PATH=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-ai-search/yanghaocheng/Causal-RM/Causal-RM/merged_model/ReCRec-RM-saferlhf
+REWARD_MODEL_NAME=ReCRec-RM-saferlhf
 
-# 数据路径
 TRAIN_DATA=${PROJECT_ROOT}/Data/pku_saferlhf_verl/train.parquet
 VAL_DATA=${PROJECT_ROOT}/Data/pku_saferlhf_verl/val.parquet
 
-# 输出目录
-OUTPUT_DIR=${PROJECT_ROOT}/checkpoints/grpo_pku_saferlhf
+OUTPUT_DIR=${PROJECT_ROOT}/checkpoints/grpo_pku_saferlhf/${REWARD_MODEL_NAME}
 
-# Group logging目录
-GROUP_LOG_DIR=${PROJECT_ROOT}/logging
+GROUP_LOG_DIR=${PROJECT_ROOT}/logging/${REWARD_MODEL_NAME}
 
 # Group logging采样配置：每次记录x个group，每个group记录y条
 GROUP_LOG_MAX_GROUPS=2
 GROUP_LOG_MAX_SAMPLES_PER_GROUP=4
 
-# ========== Wandb配置 ==========
-export WANDB_PROJECT="verl_grpo_pku_saferlhf"
-export WANDB_RUN_NAME="qwen2_7b_instructmyrm_grpo"
+export WANDB_PROJECT="verl_grpo_pku_saferlhf_recrec"
+export WANDB_RUN_NAME="qwen2_7b_instructmyrm_grpo_recrec"
 
-# ========== 训练配置 ==========
 python3 -X faulthandler -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     \
     data.train_files=${TRAIN_DATA} \
     data.val_files=${VAL_DATA} \
-    data.train_batch_size=64 \
+    data.train_batch_size=256 \
     data.max_prompt_length=2048 \
     data.max_response_length=2048 \
     data.filter_overlong_prompts=True \
@@ -52,8 +47,8 @@ python3 -X faulthandler -m verl.trainer.main_ppo \
     \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.actor.optim.lr_warmup_steps_ratio=0.1 \
-    actor_rollout_ref.actor.ppo_mini_batch_size=64 \
-    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=8 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=256 \
+    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=32 \
     actor_rollout_ref.actor.use_kl_loss=True \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=low_var_kl \
@@ -87,14 +82,14 @@ python3 -X faulthandler -m verl.trainer.main_ppo \
     \
     trainer.critic_warmup=0 \
     trainer.logger='["console","wandb"]' \
-    trainer.project_name='verl_grpo_pku_saferlhf' \
+    trainer.project_name='verl_grpo_pku_saferlhf_recrec' \
     trainer.experiment_name='qwen2_7b_myrm_grpo' \
     trainer.val_before_train=True \
     trainer.n_gpus_per_node=8 \
     trainer.nnodes=1 \
     trainer.save_freq=50 \
-    trainer.test_freq=10 \
-    trainer.total_epochs=5 \
+    trainer.test_freq=20 \
+    trainer.total_epochs=1 \
     trainer.default_local_dir=${OUTPUT_DIR} \
     trainer.group_log_dir=${GROUP_LOG_DIR} \
     trainer.group_log_freq=10 \
