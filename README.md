@@ -75,19 +75,19 @@ train完将 FSDP 分片 checkpoint 合并为 HuggingFace 格式：
 ```bash
 python3 -m verl.model_merger merge \
       --backend fsdp \
-      --local_dir checkpoints/grpo_pku_saferlhf/Naive-RM-saferlhf/global_step_81/actor \
-      --target_dir checkpoints/grpo_pku_saferlhf/Naive-RM-saferlhf/global_step_81/actor_merged \
+      --local_dir checkpoints/grpo_pku_saferlhf/Naive-RM-saferlhf-qwen3-4b/global_step_81/actor \
+      --target_dir checkpoints/grpo_pku_saferlhf/Naive-RM-saferlhf-qwen3-4b/global_step_81/actor_merged \
       --trust-remote-code
 
 python3 -m verl.model_merger merge \
       --backend fsdp \
-      --local_dir checkpoints/grpo_pku_saferlhf/ReCRec-RM-saferlhf/global_step_81/actor \
-      --target_dir checkpoints/grpo_pku_saferlhf/ReCRec-RM-saferlhf/global_step_81/actor_merged \
+      --local_dir checkpoints/grpo_pku_saferlhf/ReCRec-RM-saferlhf-qwen3-4b/global_step_50/actor \
+      --target_dir checkpoints/grpo_pku_saferlhf/ReCRec-RM-saferlhf-qwen3-4b/global_step_50/actor_merged \
       --trust-remote-code
 
 python3 -m verl.model_merger merge \
       --backend fsdp \
-      --local_dir checkpoints/grpo_pku_saferlhf/SDR2-RM-saferlhf/global_step_81/actor \
-      --target_dir checkpoints/grpo_pku_saferlhf/SDR2-RM-saferlhf/global_step_81/actor_merged \
+      --local_dir /mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/zhuyanyu/toolfoundry_tensorboard/4b-gspo-user_data_20260127_225111/global_step_60/actor \
+      --target_dir /mnt/dolphinfs/hdd_pool/docker/user/hadoop-mtsearch-assistant/ai-search/zhuyanyu/toolfoundry_tensorboard/4b-gspo-user_data_20260127_225111/global_step_60/actor_merged \
       --trust-remote-code
 ```

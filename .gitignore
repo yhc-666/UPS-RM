@@ -128,6 +128,3 @@ log
 outputs
 .history
 # Data directory
-
-# Merge directory
-merge/
